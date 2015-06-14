@@ -16,42 +16,53 @@
 
 import logging
 import smtplib
+import json
+
 from email.mime.text import MIMEText
 
-# 腾讯企业邮箱
-tc_exmail_host="smtp.exmail.qq.com"
-
 class MailSender():
+
+    # 腾讯企业邮箱
+    tc_exmail_host      = "smtp.exmail.qq.com"
+    dianhun_exmail_host = "mail.dianhun.cn"
+
     """这个类的职责就是发送邮件"""
-    def __init__(self):
-        pass
+    def __init__(self, sendername, sendermail, password):
+        self.showname   = sendername + "<" + sendermail + ">"
+        self.sendermail = sendermail
+        self.password   = password
     
-    def send_mail(self, sender, passwd, receiver_list, title, content, mail_host=tc_exmail_host):
+    def send_mail(self, receiver_list, title, content, mail_host=dianhun_exmail_host):
         """发送邮件"""
         assert isinstance(receiver_list, (list, tuple))
-        me = sender
-        if sender == "yumi@lanrenzhoumo.com":
-            me = "yumi" + "<" + sender + ">"
         msg = MIMEText(content, _subtype="plain", _charset="utf8")
         msg["Subject"] = title
-        msg["From"] = me
+        msg["From"] = self.showname
         msg["To"] = ";".join(receiver_list)
         try:
             server = smtplib.SMTP()
             server.connect(mail_host)
-            server.login(sender, passwd)
-            server.sendmail(me, receiver_list, msg.as_string())
+            server.login(self.sendermail, self.password)
+            server.sendmail(self.showname, receiver_list, msg.as_string())
             server.close()
             return True
         except Exception as e:
             logging.error(str(e))
             return False
 
-mail_sender = MailSender()
+fh      = open("config.json", "rb")
+config  = json.load(fh)
+fh.close()
+
+ms_sender_name      = config["name"]
+ms_sender_mail      = config["mail"]
+ms_sender_password  = config["password"]
+
+mail_sender = MailSender(ms_sender_name, ms_sender_mail, ms_sender_password)
 send_mail = mail_sender.send_mail
 
 if __name__ == '__main__':
-    if send_mail("yumi@lanrenzhoumo.com", "Fuck U Man", ["yumi@lanrenzhoumo.com"], "code completex", "code complete is a cool book"):
+    if send_mail(["etond@dianhun.cn"], "code completex", "the url https://www.baidu.com code complete is a cool book"):
         print "发送成功"
     else:
         print "发送失败"
